@@ -110,3 +110,42 @@ mount: /dev/storage/mountplace does not contain SELinux labels.
 10.3.1.52:/mnt/storage_1/site_web_2    /var/www/site_web_2   nfs defaults 0 0
 ````
 
+````powershell 
+Partie 3 : Serveur web
+2. Install
+
+[root@localhost ~]# sudo systemctl status nginx
+● nginx.service - The nginx HTTP and reverse proxy server
+     Loaded: loaded (/usr/lib/systemd/system/nginx.service; disabled; vendor preset: disabled)
+     Active: active (running) since Thu 2022-12-08 14:24:19 CET; 4s ago
+````
+
+````powersehell
+🌞 Analysez le service NGINX
+.avec une commande ps, déterminer sous quel utilisateur tourne le processus du service NGINX
+
+[root@localhost ~]$ ps -ef | grep nginx
+nginx       1907    1906  0 15:39 ?        00:00:00 nginx: worker process
+`````
+````powershell 
+.avec une commande ss, déterminer derrière quel port écoute actuellement le serveur web
+
+[root@localhost ~]$ sudo ss -tunlp |grep nginx
+tcp   LISTEN 0      511          0.0.0.0:80         0.0.0.0:*    users:(("nginx",pid=1257,fd=6),("nginx",pid=1256,fd=6))
+tcp   LISTEN 0      511             [::]:80            [::]:*    users:(("nginx",pid=1257,fd=7),("nginx",pid=1256,fd=7))
+
+````
+````
+.en regardant la conf, déterminer dans quel dossier se trouve la racine web
+ root  /usr/share/nginx/html;
+````
+````
+.inspectez les fichiers de la racine web, et vérifier qu'ils sont bien accessibles en lecture par l'utilisateur qui lance le processus
+
+
+
+
+
+
+
+
