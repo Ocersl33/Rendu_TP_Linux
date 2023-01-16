@@ -8,6 +8,7 @@
 🌞 Démarrer le service Apache
 
 [root@localhost ~]# sudo systemctl start httpd
+
 ![demarrer](oui/demarrer.PNG)
 
 .Faites en sorte qu'Apache démarre automatiquement au démarrage de la machine
