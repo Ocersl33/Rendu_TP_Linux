@@ -242,7 +242,9 @@ mysql> SHOW DATABASES;
                                  Dload  Upload   Total   Spent    Left  Speed
   7  168M    7 13.2M    0     0   708k      0  0:04:03  0:00:19  0:03:44  455k`
   ````
+  ````
   [oceane@localhost ~]$ ls /var/www/tp5_nextcloud/
+  
 3rdparty  config       core      index.html  occ           ocs-provider  resources   themes
 apps      console.php  cron.php  index.php   ocm-provider  public.php    robots.txt  updater
 AUTHORS   COPYING      dist      lib         ocs           remote.php    status.php  version.php
