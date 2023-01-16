@@ -1,10 +1,10 @@
 ## TP5 : Self-hosted cloud
 ## Partie 1 : Mise en place et maîtrise du serveur Web
 
-
+🌞 Installer le serveur Apache
+````powershell
 [root@localhost ~]# sudo dnf install httpd
-![Apache](oui/instal_Apache.PNG)
-
+````
 🌞 Démarrer le service Apache
 
 [root@localhost ~]# sudo systemctl start httpd
@@ -31,7 +31,7 @@
 
 [root@localhost ~]# curl localhost 
 
-![loacale](oui/locale.PNG)
+![locale](oui/locale.PNG)
 
 ## 2. Avancer vers la maîtrise du service
 🌞 Le service Apache...
