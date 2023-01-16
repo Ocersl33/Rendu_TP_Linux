@@ -279,6 +279,7 @@ IncludeOptional conf.d/*.conf
 [oceane@localhost conf]$ sudo systemctl restart httpd
 ````
 3. Finaliser l'installation de NextCloud
+
 🌞 Exploration de la base de données`
 ````powershell
 mysql> SELECT Count(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE';
