@@ -357,11 +357,43 @@ public (active)
 2023-01-17 15:51:24,933 fail2ban                [1775]: ERROR   Failed to access socket path: /var/run/fail2ban/fail2ban.sock. Is fail2ban running?
 ````
 
+## Module 4 : Monitoring
+🌞 Installer Netdata
+````powershell
+[oceane@localhost ~]$ sudo dnf install netdata 
+````
 
+➜ Une fois en place, Netdata déploie une interface un Web pour avoir moult stats en temps réel, utilisez une commande ss pour repérer sur quel port il tourne.
+````powershell 
+[oceane@localhost ~]$ ss -alptn
+State          Recv-Q         Send-Q                 Local Address:Port                    Peer Address:Port         Process
+LISTEN         0              128                          0.0.0.0:22                           0.0.0.0:*
+LISTEN         0              4096                       127.0.0.1:8125                         0.0.0.0:*
+LISTEN         0              4096                       127.0.0.1:19999                        0.0.0.0:*
+LISTEN         0              511                                *:80                                 *:*
+LISTEN         0              128                             [::]:22                              [::]:*
+LISTEN         0              4096                           [::1]:8125                            [::]:*
+LISTEN         0              4096                           [::1]:19999                           [::]:*
+````
 
-
-
-
+🌞 Une fois Netdata installé et fonctionnel, déterminer :
+.l'utilisateur sous lequel tourne le(s) processus Netdata
+```powershell
+[oceane@localhost ~]$ ps aux | grep netdata~
+oceane      2305  0.0  0.2   6412  2336 pts/0    S+   21:16   0:00 grep --color=auto netdata~
+````
+s.i Netdata écoute sur des ports
+````
+[oceane@localhost ~]$ ss -alptn
+State          Recv-Q         Send-Q                 Local Address:Port                    Peer Address:Port         Process
+LISTEN         0              128                          0.0.0.0:22                           0.0.0.0:*
+LISTEN         0              4096                       127.0.0.1:8125                         0.0.0.0:*
+LISTEN         0              4096                       127.0.0.1:19999                        0.0.0.0:*
+LISTEN         0              511                                *:80                                 *:*
+LISTEN         0              128                             [::]:22                              [::]:*
+LISTEN         0              4096                           [::1]:8125                            [::]:*
+LISTEN         0              4096                           [::1]:19999                           [::]:*
+````
 
 
 
