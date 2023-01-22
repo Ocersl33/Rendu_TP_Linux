@@ -83,68 +83,80 @@ oceane     11180    1119  0 18:56 pts/0    00:00:00 grep --color=auto nginx
 
 
 🌞 Configurer NGINX
-
-.créer un fichier de configuration NGINX
 ````powershell
-[oceane@localhost ~]$ touch nginx
-
-[oceane@localhost ~]$ cd /etc/nginx
-
-[oceane@localhost nginx]$ sudo nano myapp.conf
-
-[oceane@localhost nginx]$ sudo nano nginx.conf
-service nginx restart
-
-[oceane@localhost nginx]$ sudo service nginx restart
-```` 
-
-.y'a donc un fichier de conf NextCloud à modifier
-
+[oceane@localhost ~]$ cat nginx.conf | grep proxy_pass
+        proxy_pass http://10.105.1.12:80;
+````
+````powershell
+[oceane@localhost ~]$ sudo cat config.php | grep trusted
+  'trusted_domains' => 'proxy.tp6.linux'
+````
 
 🌞 Faites en sorte de
+```powershell
+[oceane@localhost ~]$ sudo firewall-cmd --zone=public --add-rich-rule='rule family="ipv4" source address="10.105.1.13/32" invert="True" drop' --permanent
+[sudo] password for oceane:
+success
 
+````
 🌞 Une fois que c'est en place
+````powershell 
+PS C:\Users\ocean> ping 10.105.1.13
 
-(faire un ping manuel vers l'IP de proxy.tp6.linux fonctionne
-faire un ping manuel vers l'IP de web.tp6.linux ne fonctionne pas)
-🌞 Une fois que c'est en place
+Envoi d’une requête 'Ping'  10.105.1.13 avec 32 octets de données :
+Réponse de 10.105.1.13 : octets=32 temps<1ms TTL=64
+Réponse de 10.105.1.13 : octets=32 temps<1ms TTL=64
+Réponse de 10.105.1.13 : octets=32 temps<1ms TTL=64
 
-## II. HTTPS
+Statistiques Ping pour 10.105.1.13:
+    Paquets : envoyés = 3, reçus = 3, perdus = 0 (perte 0%),
+Durée approximative des boucles en millisecondes :
+    Minimum = 0ms, Maximum = 0ms, Moyenne = 0ms
+````
+
+```powershell 
+PS C:\Users\ocean> ping 10.105.1.11
+
+Envoi d’une requête 'Ping'  10.105.1.11 avec 32 octets de données :
+Délai d’attente de la demande dépassé.
+Délai d’attente de la demande dépassé.
+Délai d’attente de la demande dépassé.
+Délai d’attente de la demande dépassé.
+
+Statistiques Ping pour 10.105.1.11:
+    Paquets : envoyés = 4, reçus = 0, perdus = 4 (perte 100%),
+````
+
+## II.HTTPS
+
 🌞 Faire en sorte que NGINX force la connexion en HTTPS plutôt qu'HTTP
-
-.on génère une paire de clés sur le serveur proxy.tp6.linux
+```powershell
+[oceane@localhost ~]$ sed '41,42!d' nginx.conf
+        server_name  _;
+        return 301   https://$host$request_uri;
+````
 ````powershell
-[oceane@localhost ~]$ openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout private.key -out certificate.crt
+oceane@LAPTOP-MDL3A6CL MINGW64 ~
+$ curl -iL http://web.tp6.linux
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   169  100   169    0     0  38269      0 --:--:-- --:--:-- --:--:-- 56333
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0HTTP/1.1 301 Moved Permanently
+Server: nginx/1.20.1
+Date: Fri, 18 Jan 2023 10:12:48 GMT
+Content-Type: text/html
+Content-Length: 169
+Connection: keep-alive
+Location: https://web.tp6.linux/
 
-Country Name (2 letter code) [XX]:FR
-State or Province Name (full name) []:Bordeaux
-Locality Name (eg, city) [Default City]:Bègles
-Organization Name (eg, company) [Default Company Ltd]:Bordeaux Ynov Campus
-Organizational Unit Name (eg, section) []:
-Common Name (eg, your name or your server's hostname) []:192.168.5.6
-Email Address []:rousselot234oceane@gmail.com
+
+curl: (60) SSL certificate problem: self signed certificate
+More details here: https://curl.se/docs/sslcerts.html
+
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
 ````
-.on ajuste la conf NGINX
-```powershell
-[oceane@localhost ~]$ sudo nano /etc/nginx/nginx.conf
-
-on ajoute au fichier ces 2 lignes pour qu'il écoute sur le port conventionnel 443 en TCP: 
-
-server {
-    listen 443 ssl;
-    ssl_certificate /path/to/certificate.crt;
-    ssl_certificate_key /path/to/private.key;
-    ...
-}
-````
- .Vérification que NGINX force la connexion en HTTPS pluôt qu'en HTTP.
-```powershell
-[oceane@localhost ~]$ curl -I http://yourdomain.com
-HTTP/1.1 429 Too Many Requests
-content-length: 117
-cache-control: no-cache
-content-type: text/html
-```
 
 
 
@@ -153,104 +165,53 @@ content-type: text/html
 
 🌞 Ecrire le script bash
 
-.il s'appellera tp6_backup.sh
 
 ````powershell
-[oceane@localhost ~]$ nano  tp6_backup.sh
- puis #!/bin/bash
- ````
- ````powershell
-[oceane@localhost ~]$  chmod +x tp6_backup.sh
+cd /srv
+mkdir backup
+cd /backup
+heure="$(date +%H%M)"
+jour="$(date +%y%m%d)"
+zip -r "nextcloud_"${jour}""${heure}"" /home/oceane/nextcloud/core/Db /home/oceane/nextcloud/core/Data /home/oceane/nextcloud/config /home/oceane/nextcloud/themes
+cd /srv
+mv nextcloud* /srv/backup
 ````
-`````
- exécuter le fichier en utilisant 
- ./nom_du_fichier.sh.
 
- ./tp6_backup.sh
- 
- ``````
- .il devra être stocké dans le dossier /srv sur la machine web.tp6.linux
-````powershell
-[oceane@localhost srv]$ cp tp6_backup.sh /srv/
-````
-(il manque la 2 eme partie de 🌞 Ecrire le script bash et les 2 ere partie de clean it 
-2. Clean it)
-
-➜ Environnement d'exécution du script
-
-.Créez un utilisateur sur la machine web.tp6.linux
-créez un utilisateur sur la machine web.tp6.linux
-
-il s'appellera backup
-
-son homedir sera /srv/backup/
-
-son shell sera /usr/bin/nologin
-```powershell
-créez un utilisateur sur la machine web.tp6.linux
-
-[oceane@localhost ~]$ sudo adduser nom_utilisateur
-[sudo] password for oceane:
-[oceane@localhost ~]$ sudo useradd -m -d /srv/backup/backup -s  /usr/bin/nologin backup
-
-```
-(il manque la fin de cette partie)
 
 ## 3. Service et timer
 🌞 Créez un service système qui lance le script
 ```powershell
-[oceane@localhost ~]$ sudo nano /etc/systemd/system/backup.service
-[oceane@localhost ~]$ sudo systemctl daemon-reload
-[oceane@localhost ~]$ sudo systemctl start backup.service
-[oceane@localhost ~]$ sudo systemctl status backup.service
-( à compléter en mettant les réponses)
+[Unit]
+Description=BAckup de nextcloud
+
+[Service]
+ExecStart=/srv/tp6_nextcloud.sh
+Type=oneshot
+```
+```powershell
+[oceane@localhost system]$ sudo systemctl status backup | grep Jan
+Jan 18 12:32:37 web.tp5.linux systemd[1]: Starting BAckup de nextcloud...
+Jan 18 12:32:38 web.tp5.linux systemd[1]: backup.service: Deactivated successfully.
+Jan 18 12:32:38 web.tp5.linux systemd[1]: Finished BAckup de nextcloud.
 ````
 🌞 Créez un timer système qui lance le service à intervalles réguliers
-````
-[oceane@localhost ~]$ sudo nano /etc/systemd/system/backup.timer
-[sudo] password for oceane:
+````powershell
+[oceane@localhost system]$ cat backup.timer
+[Unit]
+Description=Run service backup.service
 
-[oceane@localhost ~]$  sudo nano /etc/systemd/system/backup.timer
+[Timer]
+OnCalendar=*-*-* 4:00:00
 
-[oceane@localhost ~]$ sudo systemctl daemon-reload
+[Install]
+WantedBy=timers.target
 
-[oceane@localhost ~]$ sudo systemctl start backup.timer
-
-[oceane@localhost ~]$ sudo systemctl status backup.timer
-● backup.timer - Timer pour le service de backup
-     Loaded: loaded (/etc/systemd/system/backup.timer; disabled; vendor preset: disabled)
-     Active: active (waiting) since Mon 2023-01-16 19:46:42 CET; 26s ago
 ````
 🌞 Activez l'utilisation du timer
-````powershell
-[oceane@localhost ~]$ sudo systemctl daemon-reload
-[sudo] password for oceane:
-
-[oceane@localhost ~]$ sudo systemctl enable backup.timer
-Created symlink /etc/systemd/system/timers.target.wants/backup.timer → /etc/systemd/system/backup.timer.
-
-[oceane@localhost ~]$ sudo systemctl daemon-reload
-
-[oceane@localhost ~]$ sudo systemctl start backup.timer
-
-[oceane@localhost ~]$ sudo systemctl enable backup.timer
-[sudo] password for oceane:
-● backup.timer - Timer pour le service de backup
-     Loaded: loaded (/etc/systemd/system/backup.timer; enabled; vendor preset: disabled)
-     Active: active (waiting) since Mon 2023-01-16 19:46:42 CET; 14min ago
-
-
-[oceane@localhost ~]$  sudo systemctl list-timers
-NEXT                        LEFT          LAST                        PASSED    UNIT                         ACTIVATES
-Mon 2023-01-16 21:44:01 CET 1h 41min left Mon 2023-01-16 19:46:13 CET 15min ago dnf-makecache.timer          dnf-makecache.service
-Tue 2023-01-17 00:00:00 CET 3h 57min left Mon 2023-01-16 19:04:55 CET 57min ago logrotate.timer              logrotate.service
-Tue 2023-01-17 19:19:48 CET 23h left      Mon 2023-01-16 19:19:48 CET 42min ago systemd-tmpfiles-clean.timer systemd-tmpfiles-clean.service
-Tue 2023-01-17 19:46:42 CET 23h left      Mon 2023-01-16 19:46:42 CET 15min ago backup.timer                 backup.service
-
-4 timers listed.
-Pass --all to see loaded but inactive timers, too.
-[oceane@localhost ~]$
-````
+```powershell
+[oceane@localhost system]$ sudo systemctl list-timers | grep backup
+Sun 2023-01-15 04:00:00 CET 15h left  n/a         n/a          backup.timer        backup.service
+```
 ## II. NFS
 
 🌞 Préparer un dossier à partager sur le réseau(sur la machine storage.tp6.linux) 
@@ -292,31 +253,17 @@ Created symlink /etc/systemd/system/multi-user.target.wants/nfs-server.service �
 ## 2. Client NFS
 🌞 Installer un client NFS sur web.tp6.linux
 ```powershell
-[oceane@localhost ~]$ sudo dnf install nfs-common
-
-[oceane@localhost ~]$ sudo mkdir -p /srv/backup
-
-[oceane@localhost ~]$ sudo mount storage.tp6.linux:/srv/nfs_shares/web.tp6.linux/ /srv/backup
-mount: /srv/backup: bad option; for several filesystems (e.g. nfs, cifs) you might need a /sbin/mount.<type> helper program.
-
-[oceane@localhost /]$ sudo nano /etc/fstab
-storage.tp6.linux:/srv/nfs_shares/web.tp6.linux/ /srv/backup/ nfs defaults 0 0
-
-[oceane@localhost /]$ sudo mount -a
-[sudo] password for oceane:
-mount: /srv/backup: bad option; for several filesystems (e.g. nfs, cifs) you might need a /sbin/mount.<type> helper program.
+[oceane@localhost /]$ sudo mount 10.105.1.15:/srv/nfs_shares/web.tp6.linux /srv/backup/
+````
+````powershell
+[oceane@localhost /]$ df -h | grep /srv/backup
+10.105.1.15:/srv/nfs_shares/web.tp6.linux  6.2G  1.3G  4.9G  21%  /srv/backup 
+````
 
 🌞 Tester la restauration des données sinon ça sert à rien :)
-
-[oceane@localhost /]$ sudo  -avz --ignore-existing
-usage: sudo -h | -K | -k | -V
-usage: sudo -v [-AknS] [-g group] [-h host] [-p prompt] [-u user]
-usage: sudo -l [-AknS] [-g group] [-h host] [-p prompt] [-U user] [-u user] [command]
-usage: sudo [-AbEHknPS] [-r role] [-t type] [-C num] [-D directory] [-g group] [-h host] [-p prompt] [-R directory] [-T
-            timeout] [-u user] [VAR=value] [-i|-s] [<command>]
-usage: sudo -e [-AknS] [-r role] [-t type] [-C num] [-D directory] [-g group] [-h host] [-p prompt] [-R directory] [-T
-            timeout] [-u user] file ...
-```
+````powershell
+[oceane@storage web.tp6.linux]$ sudo unzip nextcloud_2301162145.zip
+````
 
 
 ## Module 3 : Fail2Ban
@@ -362,8 +309,6 @@ public (active)
 ````powershell
 [oceane@localhost ~]$ sudo dnf install netdata 
 ````
-
-➜ Une fois en place, Netdata déploie une interface un Web pour avoir moult stats en temps réel, utilisez une commande ss pour repérer sur quel port il tourne.
 ````powershell 
 [oceane@localhost ~]$ ss -alptn
 State          Recv-Q         Send-Q                 Local Address:Port                    Peer Address:Port         Process
@@ -382,8 +327,10 @@ LISTEN         0              4096                           [::1]:19999        
 [oceane@localhost ~]$ ps aux | grep netdata~
 oceane      2305  0.0  0.2   6412  2336 pts/0    S+   21:16   0:00 grep --color=auto netdata~
 ````
+
 s.i Netdata écoute sur des ports
-````
+
+````powershell
 [oceane@localhost ~]$ ss -alptn
 State          Recv-Q         Send-Q                 Local Address:Port                    Peer Address:Port         Process
 LISTEN         0              128                          0.0.0.0:22                           0.0.0.0:*
@@ -394,6 +341,46 @@ LISTEN         0              128                             [::]:22           
 LISTEN         0              4096                           [::1]:8125                            [::]:*
 LISTEN         0              4096                           [::1]:19999                           [::]:*
 ````
+````
+🌞 Configurer Netdata pour qu'il vous envoie des alertes
+````powershell
+[oceane@localhost ~]$ cat /etc/netdata/health_alarm_notify.conf
+###############################################################################
 
+# enable/disable sending discord notifications
+SEND_DISCORD="YES"
 
+# Create a webhook by following the official documentation -
+# https://support.discordapp.com/hc/en-us/articles/228383668-Intro-to-Webhooks
+DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/1063442238765539401/-LqWUr77GYSKhUJzClfJQxf7YKt_65bwezjg0eCsfWzduylkEOc1vl-qgyfWNu-YvLC6"
 
+# if a role's recipients are not configured, a notification will be send to
+# this discord channel (empty = do not send a notification for unconfigured
+# roles):
+DEFAULT_RECIPIENT_DISCORD="général"
+````
+
+🌞 Vérifier que les alertes fonctionnent
+````powershell
+[oceane@localhost ~]$ cat prog.py
+a=2
+for i in range (1,10):
+        a=a**a
+        print(a)
+````
+````powershell
+[oceane@localhost ~]$ python3 prog.py
+4
+256
+32317006071311007300714876688669951960444102669715484032130345427524655138867890893197201411522913463688717960921898019494119559150490921095088152386448283120630877367300996091750197750389652106796057638384067568276792218642619756161838094338476170470581645852036305042887575891541065808607552399123930385521914333389668342420684974786564569494856176035326322058077805659331026192708460314150258592864177116725943603718461857357598351152301645904403697613233287231227125684710820209725157101726931323469678542580656697935045997268352998638215525166389437335543602135433229604645318478604952148193555853611059596230656
+Killed
+````
+````powershell
+[oceane@localhost netdata]$ cat health.log | tail -n 7
+2023-01-18 14:17:44: [db.tp5.linux]: Alert event for [mem.available.ram_available], value [2.06%], status [CRITICAL].
+2023-01-18 14:17:44: [db.tp5.linux]: Sending notification for alarm 'mem.available.ram_available' status CRITICAL.
+2023-01-18 14:18:03: [db.tp5.linux]: Alert event for [mem.available.ram_available], value [64.1%], status [CLEAR].
+2023-01-18 14:19:33: [db.tp5.linux]: Alert event for [system.swapio.30min_ram_swapped_out], value [190.4% of RAM], status [WARNING].
+2023-01-18 14:19:33: [db.tp5.linux]: Sending notification for alarm 'system.swapio.30min_ram_swapped_out' status WARNING.
+2023-01-18 14:20:33: [db.tp5.linux]: Alert event for [mem.oom_kill.oom_kill], value [1 kills], status [WARNING].
+2023-01-18 14:20:33: [db.tp5.linux]: Sending notification for alarm 'mem.oom_kill.oom_kill' status WARNING.
